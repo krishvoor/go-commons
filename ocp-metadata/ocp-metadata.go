@@ -23,6 +23,7 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -226,7 +227,7 @@ func (meta *Metadata) getNodesInfo(clusterMetadata *ClusterMetadata) error {
 		} else if _, ok := node.Labels["node-role.kubernetes.io/infra"]; ok { // Check for infra role
 			clusterMetadata.InfraNodesCount++
 			clusterMetadata.InfraNodesType = node.Labels["node.kubernetes.io/instance-type"]
-		} else if _, ok := node.Labels["node-role.kubernetes.io/worker"]; ok { // Check for worker role
+		} else if _, ok := node.Labels["node-role.kubernetes.io/worker"]; ok && !hasInfraLabel(node) { // Check for worker role
 			clusterMetadata.WorkerNodesCount++
 			clusterMetadata.WorkerNodesType = node.Labels["node.kubernetes.io/instance-type"]
 		} else {
@@ -234,6 +235,12 @@ func (meta *Metadata) getNodesInfo(clusterMetadata *ClusterMetadata) error {
 		}
 	}
 	return err
+}
+
+// hasInfraLabel checks if the node has the "infra" label
+func hasInfraLabel(node v1.Node) bool {
+	_, hasInfraLabel := node.Labels["node-role.kubernetes.io/infra"]
+	return hasInfraLabel
 }
 
 // getSDNInfo returns SDN type
